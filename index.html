@@ -161,6 +161,7 @@ body.shaking{animation:screenShake .35s ease}
 .reward-btn:active{transform:scale(.95)}
 </style>
 </head>
+<script src="letters-audio.js"></script>
 <body>
 <svg width="0" height="0" style="position:absolute">
   <defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4d96ff"/><stop offset="100%" stop-color="#4dff91"/></linearGradient></defs>
@@ -388,22 +389,15 @@ async function _playViaCors(text,rate){
   }catch(e){return false;}
 }
 
-// Индекс букв для локальных аудиофайлов (audio/0.mp3 = а, audio/1.mp3 = б ...)
-const _LIDX='абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
-function _letterFile(ch){const i=_LIDX.indexOf(ch);return i>=0?'audio/'+i+'.mp3':null;}
-
 function say(text,rate=.8){
   const w=text.toLowerCase().trim();if(!w)return;
-  // Одиночная буква — локальный MP3, работает на всех платформах
-  if(w.length===1&&/[а-яё]/.test(w)){
-    const f=_letterFile(w);
-    if(f){
-      const au=new Audio(f);
-      au.volume=1;au.playbackRate=Math.max(0.5,Math.min(2,rate));
-      au.onerror=()=>_sayFallback(w,rate);
-      au.play().catch(()=>_sayFallback(w,rate));
-      return;
-    }
+  // Одиночная буква — base64 аудио из letters-audio.js (работает на всех платформах)
+  if(w.length===1&&/[а-яё]/.test(w)&&window._LA&&window._LA[w]){
+    const au=new Audio(window._LA[w]);
+    au.volume=1;au.playbackRate=Math.max(0.5,Math.min(2,rate));
+    au.onerror=()=>_sayFallback(w,rate);
+    au.play().catch(()=>_sayFallback(w,rate));
+    return;
   }
   _sayFallback(w,rate);
 }
