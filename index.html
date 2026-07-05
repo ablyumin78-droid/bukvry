@@ -357,43 +357,66 @@ function sndWrong(){beep(160,.3,'sawtooth',.15)}
 function sndCoin(){beep(880,.05,'sine',.18);beep(1108,.1,'sine',.18,.06)}
 function sndLvl(){[523,659,784,1046,1318].forEach((f,i)=>beep(f,.14,'sine',.18,i*.09))}
 
-// SPEECH — строчные буквы критичны: "ма" = слог, "МА" = аббревиатура
-let ruVoice=null;
+// SPEECH — Primary: Google Translate TTS (работает на всех Android без настроек)
+// Fallback: Web Speech API (если Google недоступен)
+let _au=null,ruVoice=null;
+function getAu(){if(!_au){_au=new Audio();_au.volume=1;}return _au;}
+
 function loadVoice(){
   const all=window.speechSynthesis?.getVoices()||[];
   if(!all.length)return;
-  // Ищем русский голос; если нет — берём первый доступный
-  ruVoice=all.find(v=>v.lang==='ru-RU')||all.find(v=>v.lang.startsWith('ru'))||all[0]||null;
+  ruVoice=all.find(v=>v.lang==='ru-RU')||all.find(v=>v.lang.startsWith('ru'))||null;
 }
-function mkU(text,rate){
-  const u=new SpeechSynthesisUtterance(text.toLowerCase());
-  // Перечитываем голоса каждый раз — Android загружает их лениво
-  const voices=window.speechSynthesis?.getVoices()||[];
-  const rv=voices.find(v=>v.lang==='ru-RU')||voices.find(v=>v.lang.startsWith('ru'))||ruVoice||null;
-  if(rv)u.voice=rv;
-  u.lang='ru-RU';u.rate=rate;u.pitch=1.0;return u;
-}
-function say(text,rate=.8){
+
+// Fallback через Web Speech API
+function _wsSay(text,rate){
   if(!window.speechSynthesis)return;
   try{
     window.speechSynthesis.cancel();
-    const u=mkU(text,rate);
-    // requestAnimationFrame: остаёмся в контексте жеста, но после cancel()
-    requestAnimationFrame(()=>{
-      try{
-        if(window.speechSynthesis.paused)window.speechSynthesis.resume();
-        window.speechSynthesis.speak(u);
-      }catch(e){}
-    });
+    const voices=window.speechSynthesis.getVoices();
+    const u=new SpeechSynthesisUtterance(text.toLowerCase());
+    const rv=voices.find(v=>v.lang==='ru-RU')||voices.find(v=>v.lang.startsWith('ru'))||ruVoice||null;
+    if(rv)u.voice=rv;
+    u.lang='ru-RU';u.rate=rate;u.pitch=1.0;
+    window.speechSynthesis.speak(u);
   }catch(e){}
 }
+
+// Основная функция — Google Translate TTS
+function say(text,rate=.8){
+  const w=text.toLowerCase().trim();if(!w)return;
+  try{
+    const au=getAu();
+    au.pause();
+    au.playbackRate=Math.max(0.5,Math.min(2,rate));
+    au.src='https://translate.googleapis.com/translate_tts?ie=UTF-8&q='+encodeURIComponent(w)+'&tl=ru&client=gtx';
+    au.play().catch(()=>_wsSay(w,rate));
+  }catch(e){_wsSay(text,rate);}
+}
+
 function speakSyl(){
   const c=document.getElementById('syl-c').textContent,v=document.getElementById('syl-v').textContent;
-  if(!window.speechSynthesis)return;initAudio();sndCoin();window.speechSynthesis.cancel();
-  const u=mkU(c+v,.42);u.onend=()=>setTimeout(()=>window.speechSynthesis.speak(mkU(c+v,.65)),280);
-  window.speechSynthesis.speak(u);coins+=1;save();refreshCoins();
+  initAudio();sndCoin();
+  const syl=(c+v).toLowerCase();
+  try{
+    const au=getAu();
+    au.pause();au.onended=null;
+    au.src='https://translate.googleapis.com/translate_tts?ie=UTF-8&q='+encodeURIComponent(syl)+'&tl=ru&client=gtx';
+    au.playbackRate=0.65;
+    au.play().then(()=>{
+      au.onended=()=>{au.onended=null;au.playbackRate=1.0;au.play().catch(()=>{})};
+    }).catch(()=>{
+      if(!window.speechSynthesis)return;
+      window.speechSynthesis.cancel();
+      const u1=new SpeechSynthesisUtterance(syl);
+      if(ruVoice)u1.voice=ruVoice;u1.lang='ru-RU';u1.rate=0.42;
+      u1.onend=()=>setTimeout(()=>{const u2=new SpeechSynthesisUtterance(syl);if(ruVoice)u2.voice=ruVoice;u2.lang='ru-RU';u2.rate=0.65;window.speechSynthesis.speak(u2);},280);
+      window.speechSynthesis.speak(u1);
+    });
+  }catch(e){}
+  coins+=1;save();refreshCoins();
 }
-function speakCon(){const c=document.getElementById('syl-c').textContent;if(window.speechSynthesis){window.speechSynthesis.cancel();window.speechSynthesis.speak(mkU(c+'а',.5))}}
+function speakCon(){const c=document.getElementById('syl-c').textContent;say(c+'а',.5);}
 if(window.speechSynthesis){window.speechSynthesis.addEventListener('voiceschanged',loadVoice);[0,300,1000,2000].forEach(d=>setTimeout(loadVoice,d))}
 
 // ДАННЫЕ — emoji ОБЯЗАН совпадать с word!
