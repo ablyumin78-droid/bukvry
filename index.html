@@ -136,6 +136,26 @@ body.shaking{animation:screenShake .35s ease}
 .rd-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex-shrink:0}
 .rd-opt{border-radius:22px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:54px;cursor:pointer;border:3px solid rgba(255,255,255,.1);background:rgba(255,255,255,.07);transition:transform .15s var(--spring);animation:floatUp .45s var(--spring) both;user-select:none}
 .rd-opt:active{transform:scale(.85)}.rd-opt.rd-ok{border-color:var(--mint)!important;background:rgba(77,255,145,.2)!important}.rd-opt.rd-bad{border-color:var(--coral)!important;background:rgba(255,107,107,.15)!important;animation:shake .3s}
+.goal-section{margin-top:14px;flex-shrink:0}
+.goal-label{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase}
+.goal-card{background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.1);border-radius:20px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:9px;transition:.3s var(--spring)}
+.goal-card.done{border-color:var(--gold);background:rgba(255,215,0,.08)}
+.goal-icon{font-size:40px;flex-shrink:0;animation:float 3s ease-in-out infinite}
+.goal-info{flex:1;min-width:0}
+.goal-title{font-size:15px;font-weight:800}
+.goal-sub{font-size:12px;color:var(--sub);margin-top:2px}
+.goal-stars{font-size:20px;margin-top:6px;letter-spacing:3px}
+.goal-bar-wrap{height:8px;background:rgba(255,255,255,.12);border-radius:4px;margin-top:8px;overflow:hidden}
+.goal-bar{height:100%;background:linear-gradient(90deg,#ffd700,#ff9500);border-radius:4px;transition:width .8s ease;width:0%}
+.reward-ov{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:800;flex-direction:column}
+.reward-ov.on{display:flex}
+.reward-box{background:linear-gradient(160deg,#241a52,#1b1340);border:3px solid var(--gold);border-radius:32px;padding:40px 28px;text-align:center;max-width:310px;width:90%;animation:pop .5s var(--spring);box-shadow:0 0 60px rgba(255,215,0,.25)}
+.reward-big{font-size:90px;display:block;animation:float 2s ease-in-out infinite;margin-bottom:6px}
+.reward-title{font-size:34px;font-weight:900;color:var(--gold);margin:8px 0}
+.reward-msg{font-size:15px;line-height:1.5;margin-bottom:14px}
+.reward-hint{font-size:13px;color:var(--sub);background:rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-bottom:18px;line-height:1.5}
+.reward-btn{width:100%;padding:15px;border:none;border-radius:18px;background:linear-gradient(135deg,var(--gold),#ff9500);color:#000;font-size:17px;font-weight:900;cursor:pointer;transition:.15s}
+.reward-btn:active{transform:scale(.95)}
 </style>
 </head>
 <body>
@@ -161,6 +181,25 @@ body.shaking{animation:screenShake .35s ease}
     <div class="game-card gc5" onclick="go('syllables')"><span class="gic">✍️</span><div class="gtitle">Слоги</div><div class="gsub">МА МО МУ МИ...</div></div>
     <div class="game-card gc6" onclick="go('words')"><span class="gic">📖</span><div class="gtitle">Слова</div><div class="gsub">55 слов по слогам</div></div>
     <div class="game-card gc7" onclick="go('read-pick')" style="grid-column:1/-1"><span class="gic">👁️</span><div class="gtitle">Читаем! — Слово → Картинка</div><div class="gsub">200 слов — прочитай и найди картинку</div></div>
+  </div>
+  <div class="goal-section">
+    <div class="goal-label">🎯 Твои цели</div>
+    <div class="goal-card" id="goal-week">
+      <span class="goal-icon">🍦</span>
+      <div class="goal-info">
+        <div class="goal-title">МакФлури!</div>
+        <div class="goal-sub">Играй 7 дней подряд</div>
+        <div class="goal-stars" id="goal-stars">⭐⭐⭐⭐⭐⭐⭐</div>
+      </div>
+    </div>
+    <div class="goal-card" id="goal-month">
+      <span class="goal-icon">🍔</span>
+      <div class="goal-info">
+        <div class="goal-title">Поход в Макдак!</div>
+        <div class="goal-sub" id="goal-month-sub">0 / 30 дней</div>
+        <div class="goal-bar-wrap"><div class="goal-bar" id="goal-bar"></div></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -281,6 +320,16 @@ body.shaking{animation:screenShake .35s ease}
 <div id="sc-letter" class="sc">
   <div class="nav" style="width:100%;flex-shrink:0"><button class="back" onclick="go('alphabet')">←</button><div class="nav-coins">💰<span class="cv">0</span></div></div>
   <div id="lt-cont" style="width:100%;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto"></div>
+</div>
+
+<div class="reward-ov" id="reward-ov">
+  <div class="reward-box">
+    <span class="reward-big" id="rw-em">🍦</span>
+    <div class="reward-title" id="rw-title">МакФлури!</div>
+    <div class="reward-msg" id="rw-msg">Ты играл 7 дней подряд!<br>Ты настоящий чемпион! 🏆</div>
+    <div class="reward-hint" id="rw-hint">📱 Покажи этот экран маме или папе — ты заработал награду!</div>
+    <button class="reward-btn" onclick="closeReward()">🎉 УРА! Спасибо!</button>
+  </div>
 </div>
 
 <div class="meme-ov" id="meme-ov"><div class="meme-box" id="meme-box"><span class="meme-em" id="meme-em">🔥</span><div class="meme-tx" id="meme-tx">КРАШ!</div><div class="meme-sub" id="meme-sub"></div></div></div>
@@ -572,6 +621,60 @@ let wbWords=[],wbIdx=0,wbTyped=[],wbWord='';
 let swDeck=[],swIdx=0,swStartX=0,swCurX=0,swDragging=false;
 
 function save(){localStorage.setItem('bkv5-c',coins);localStorage.setItem('bkv5-l',JSON.stringify([...learned]));localStorage.setItem('bkv5-s',streak)}
+
+// STREAK & REWARDS
+function todayStr(){return new Date().toISOString().slice(0,10)}
+function initStreak(){
+  const today=todayStr();
+  const last=localStorage.getItem('bkv5-last-date')||'';
+  let ds=parseInt(localStorage.getItem('bkv5-day-streak')||'0');
+  let td=parseInt(localStorage.getItem('bkv5-total-days')||'0');
+  if(today!==last){
+    const prev=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    ds=last===prev?ds+1:1;
+    td++;
+    localStorage.setItem('bkv5-last-date',today);
+    localStorage.setItem('bkv5-day-streak',ds);
+    localStorage.setItem('bkv5-total-days',td);
+    // Weekly reward — каждые 7 дней подряд
+    if(ds%7===0){
+      const lrs=parseInt(localStorage.getItem('bkv5-lrs')||'0');
+      if(ds>lrs){localStorage.setItem('bkv5-lrs',ds);setTimeout(()=>showReward('week',ds),2000)}
+    }
+    // Monthly reward — когда суммарно 30 дней
+    if(td>=30&&!localStorage.getItem('bkv5-mr')){
+      localStorage.setItem('bkv5-mr','1');setTimeout(()=>showReward('month',td),2500);
+    }
+  }
+  renderGoals(ds,td);
+}
+function renderGoals(ds,td){
+  const stars=Array.from({length:7},(_,i)=>i<ds%7||ds%7===0&&ds>0?'🌟':'⭐').join('');
+  document.getElementById('goal-stars').textContent=ds>=7&&ds%7===0?'✅ '.repeat(Math.floor(ds/7))+'Заработал!':stars;
+  document.getElementById('goal-week').classList.toggle('done',ds>=7);
+  const pct=Math.min(100,td/30*100);
+  document.getElementById('goal-bar').style.width=pct+'%';
+  if(td>=30){
+    document.getElementById('goal-month').classList.add('done');
+    document.getElementById('goal-month-sub').textContent='✅ Заработал поход в Макдак!';
+  }else{
+    document.getElementById('goal-month-sub').textContent=td+' / 30 дней — ещё '+(30-td)+'!';
+  }
+}
+function showReward(type,count){
+  const isW=type==='week';
+  document.getElementById('rw-em').textContent=isW?'🍦':'🍔';
+  document.getElementById('rw-title').textContent=isW?'МакФлури!':'Поход в Макдак!';
+  document.getElementById('rw-msg').innerHTML=isW
+    ?'Ты играл <b>'+count+' дней подряд</b>!<br>Ты настоящий чемпион! 🏆'
+    :'Ты играл <b>30 дней</b>!<br>Это целый месяц! 🏆';
+  document.getElementById('rw-hint').innerHTML=isW
+    ?'📱 Покажи этот экран маме или папе —<br>ты заработал <b>МакФлури!</b> 🍦'
+    :'📱 Покажи этот экран маме или папе —<br>ты заработал <b>поход в Макдональдс!</b> 🍔';
+  document.getElementById('reward-ov').classList.add('on');
+  initAudio();sndLvl();particles(window.innerWidth/2,window.innerHeight/3);
+}
+function closeReward(){document.getElementById('reward-ov').classList.remove('on')}
 function refreshCoins(){document.querySelectorAll('.cv').forEach(e=>e.textContent=coins)}
 const R=()=>Math.random()-.5;
 
@@ -985,7 +1088,7 @@ function finishRead(){
 
 document.addEventListener('touchstart',()=>{initAudio();loadVoice()},{once:true,passive:true});
 document.addEventListener('click',()=>{initAudio();loadVoice()},{once:true});
-renderHome();refreshCoins();
+renderHome();refreshCoins();initStreak();
 if(!learned.size)setTimeout(()=>toast('Нажми 🫧 Пузырьки и начни! 🐱'),800);
 </script>
 </body>
