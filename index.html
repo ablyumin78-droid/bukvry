@@ -359,50 +359,39 @@ function sndCoin(){beep(880,.05,'sine',.18);beep(1108,.1,'sine',.18,.06)}
 function sndLvl(){[523,659,784,1046,1318].forEach((f,i)=>beep(f,.14,'sine',.18,i*.09))}
 
 // SPEECH
-// Уровень 1: Web Speech API с русским голосом (Desktop, iPhone)
-// Уровень 2: Google TTS через Audio-элемент (Android Chrome)
-// Уровень 3: Google TTS через CORS-прокси + Web Audio API (Telegram Android WebView)
-let _au=null,ruVoice=null;
-function getAu(){if(!_au){_au=new Audio();_au.volume=1;}return _au;}
+// iPhone/Desktop: Web Speech API (высокое качество, встроенный русский голос)
+// Android: AudioContext + base64 MP3 (тот же движок что играет монеты — точно работает)
+let ruVoice=null;
+const _decoded={};
+
 function loadVoice(){
   const all=window.speechSynthesis?.getVoices()||[];
   if(!all.length)return;
   ruVoice=all.find(v=>v.lang==='ru-RU')||all.find(v=>v.lang.startsWith('ru'))||null;
 }
 
-function _gttsUrl(text){
-  return 'https://translate.googleapis.com/translate_tts?ie=UTF-8&q='+encodeURIComponent(text)+'&tl=ru&client=gtx';
-}
-
-// Уровень 3: CORS-прокси → ArrayBuffer → Web Audio API
-async function _playViaCors(text,rate){
+// Воспроизведение через AudioContext — работает на Android в Telegram
+async function _playAC(letter,rate){
   try{
     if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
     if(actx.state==='suspended')await actx.resume();
-    const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(_gttsUrl(text)));
-    if(!r.ok)throw 0;
-    const buf=await actx.decodeAudioData(await r.arrayBuffer());
+    if(!_decoded[letter]){
+      const b64=window._LA[letter].split(',')[1];
+      const bin=atob(b64);
+      const arr=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+      _decoded[letter]=await actx.decodeAudioData(arr.buffer);
+    }
     const src=actx.createBufferSource();
-    src.buffer=buf;src.playbackRate.value=Math.max(0.5,Math.min(2,rate));
+    src.buffer=_decoded[letter];
+    src.playbackRate.value=Math.max(0.5,Math.min(2,rate));
     src.connect(actx.destination);src.start(0);
-    return true;
-  }catch(e){return false;}
+  }catch(e){}
 }
 
 function say(text,rate=.8){
   const w=text.toLowerCase().trim();if(!w)return;
-  // Одиночная буква — base64 аудио из letters-audio.js (работает на всех платформах)
-  if(w.length===1&&/[а-яё]/.test(w)&&window._LA&&window._LA[w]){
-    const au=new Audio(window._LA[w]);
-    au.volume=1;au.playbackRate=Math.max(0.5,Math.min(2,rate));
-    au.onerror=()=>_sayFallback(w,rate);
-    au.play().catch(()=>_sayFallback(w,rate));
-    return;
-  }
-  _sayFallback(w,rate);
-}
-function _sayFallback(w,rate){
-  // Уровень 1: Web Speech API с русским голосом
+  // Сначала пробуем Web Speech API (iPhone, Desktop — высокое качество)
   if(window.speechSynthesis){
     const voices=window.speechSynthesis.getVoices();
     const rv=voices.find(v=>v.lang==='ru-RU')||voices.find(v=>v.lang.startsWith('ru'));
@@ -413,26 +402,24 @@ function _sayFallback(w,rate){
       window.speechSynthesis.speak(u);return;
     }
   }
-  // Уровень 2: Google TTS через Audio-элемент
-  const au=getAu();
-  au.pause();au.onended=null;
-  au.playbackRate=Math.max(0.5,Math.min(2,rate));
-  au.src=_gttsUrl(w);
-  au.play().catch(()=>_playViaCors(w,rate).then(ok=>{
-    if(!ok&&window.speechSynthesis){
-      window.speechSynthesis.cancel();
-      const u=new SpeechSynthesisUtterance(w);
-      u.lang='ru-RU';u.rate=rate;
-      window.speechSynthesis.speak(u);
-    }
-  }));
+  // Нет русского голоса (Android) — AudioContext + base64 для букв
+  if(w.length===1&&/[а-яё]/.test(w)&&window._LA?.[w]){
+    _playAC(w,rate);return;
+  }
+  // Для слов — Web Speech без конкретного голоса
+  if(window.speechSynthesis){
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(w);
+    u.lang='ru-RU';u.rate=rate;
+    window.speechSynthesis.speak(u);
+  }
 }
 
 function speakSyl(){
   const c=document.getElementById('syl-c').textContent,v=document.getElementById('syl-v').textContent;
   initAudio();sndCoin();
   const syl=(c+v).toLowerCase();
-  // Уровень 1: Web Speech API с русским голосом
+  // iPhone/Desktop: Web Speech API
   if(window.speechSynthesis){
     const voices=window.speechSynthesis.getVoices();
     const rv=voices.find(v=>v.lang==='ru-RU')||voices.find(v=>v.lang.startsWith('ru'));
@@ -445,13 +432,18 @@ function speakSyl(){
       coins+=1;save();refreshCoins();return;
     }
   }
-  // Уровень 2+3: Google TTS
-  const au=getAu();
-  au.pause();au.onended=null;
-  au.src=_gttsUrl(syl);au.playbackRate=0.65;
-  au.play().then(()=>{
-    au.onended=()=>{au.onended=null;au.playbackRate=1.0;au.play().catch(()=>{});};
-  }).catch(()=>_playViaCors(syl,0.65));
+  // Android: играем слоги через AudioContext (каждую букву отдельно)
+  if(window._LA){
+    const letters=[...syl].filter(ch=>/[а-яё]/.test(ch));
+    if(letters.length){
+      (async()=>{
+        for(const ch of letters){if(window._LA[ch])await _playAC(ch,0.6);}
+        await new Promise(r=>setTimeout(r,400));
+        for(const ch of letters){if(window._LA[ch])await _playAC(ch,0.9);}
+      })();
+      coins+=1;save();refreshCoins();return;
+    }
+  }
   coins+=1;save();refreshCoins();
 }
 function speakCon(){const c=document.getElementById('syl-c').textContent;say(c+'а',.5);}
