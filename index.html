@@ -388,16 +388,22 @@ async function _playViaCors(text,rate){
   }catch(e){return false;}
 }
 
+// Индекс букв для локальных аудиофайлов (audio/0.mp3 = а, audio/1.mp3 = б ...)
+const _LIDX='абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+function _letterFile(ch){const i=_LIDX.indexOf(ch);return i>=0?'audio/'+i+'.mp3':null;}
+
 function say(text,rate=.8){
   const w=text.toLowerCase().trim();if(!w)return;
-  // Одиночная буква — играем предзаписанный локальный MP3 (работает везде)
+  // Одиночная буква — локальный MP3, работает на всех платформах
   if(w.length===1&&/[а-яё]/.test(w)){
-    const au=getAu();
-    au.pause();au.onended=null;
-    au.playbackRate=Math.max(0.5,Math.min(2,rate));
-    au.src='audio/'+w+'.mp3';
-    au.play().catch(()=>_sayFallback(w,rate));
-    return;
+    const f=_letterFile(w);
+    if(f){
+      const au=new Audio(f);
+      au.volume=1;au.playbackRate=Math.max(0.5,Math.min(2,rate));
+      au.onerror=()=>_sayFallback(w,rate);
+      au.play().catch(()=>_sayFallback(w,rate));
+      return;
+    }
   }
   _sayFallback(w,rate);
 }
