@@ -343,7 +343,14 @@ const tg=window.Telegram?.WebApp;if(tg){tg.ready();tg.expand()}
 
 // AUDIO
 let actx=null;
-function initAudio(){if(!actx)try{actx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+function initAudio(){
+  if(!actx)try{actx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}
+  // Android: прогрев TTS при первом жесте — без этого speak() молчит
+  if(window.speechSynthesis&&!window.speechSynthesis._warm){
+    window.speechSynthesis._warm=true;
+    try{const w=new SpeechSynthesisUtterance('');w.volume=0;window.speechSynthesis.speak(w)}catch(e){}
+  }
+}
 function beep(f,d,t='sine',v=.22,delay=0){if(!actx)return;if(actx.state==='suspended')actx.resume();try{const o=actx.createOscillator(),g=actx.createGain();o.connect(g);g.connect(actx.destination);o.type=t;o.frequency.value=f;const T=actx.currentTime+delay;g.gain.setValueAtTime(0,T);g.gain.linearRampToValueAtTime(v,T+.01);g.gain.exponentialRampToValueAtTime(.001,T+d);o.start(T);o.stop(T+d+.05)}catch(e){}}
 function sndOk(){beep(523,.08);beep(659,.08,'sine',.22,.09);beep(784,.22,'sine',.22,.18)}
 function sndWrong(){beep(160,.3,'sawtooth',.15)}
@@ -352,9 +359,34 @@ function sndLvl(){[523,659,784,1046,1318].forEach((f,i)=>beep(f,.14,'sine',.18,i
 
 // SPEECH — строчные буквы критичны: "ма" = слог, "МА" = аббревиатура
 let ruVoice=null;
-function loadVoice(){const all=window.speechSynthesis?.getVoices()||[];ruVoice=all.find(v=>v.lang==='ru-RU')||all.find(v=>v.lang.startsWith('ru'))||null}
-function mkU(text,rate){const u=new SpeechSynthesisUtterance(text.toLowerCase());if(ruVoice)u.voice=ruVoice;u.lang='ru-RU';u.rate=rate;u.pitch=1.0;return u}
-function say(text,rate=.8){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();window.speechSynthesis.speak(mkU(text,rate))}
+function loadVoice(){
+  const all=window.speechSynthesis?.getVoices()||[];
+  if(!all.length)return;
+  // Ищем русский голос; если нет — берём первый доступный
+  ruVoice=all.find(v=>v.lang==='ru-RU')||all.find(v=>v.lang.startsWith('ru'))||all[0]||null;
+}
+function mkU(text,rate){
+  const u=new SpeechSynthesisUtterance(text.toLowerCase());
+  // Перечитываем голоса каждый раз — Android загружает их лениво
+  const voices=window.speechSynthesis?.getVoices()||[];
+  const rv=voices.find(v=>v.lang==='ru-RU')||voices.find(v=>v.lang.startsWith('ru'))||ruVoice||null;
+  if(rv)u.voice=rv;
+  u.lang='ru-RU';u.rate=rate;u.pitch=1.0;return u;
+}
+function say(text,rate=.8){
+  if(!window.speechSynthesis)return;
+  try{
+    window.speechSynthesis.cancel();
+    const u=mkU(text,rate);
+    // requestAnimationFrame: остаёмся в контексте жеста, но после cancel()
+    requestAnimationFrame(()=>{
+      try{
+        if(window.speechSynthesis.paused)window.speechSynthesis.resume();
+        window.speechSynthesis.speak(u);
+      }catch(e){}
+    });
+  }catch(e){}
+}
 function speakSyl(){
   const c=document.getElementById('syl-c').textContent,v=document.getElementById('syl-v').textContent;
   if(!window.speechSynthesis)return;initAudio();sndCoin();window.speechSynthesis.cancel();
