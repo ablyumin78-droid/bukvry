@@ -969,8 +969,8 @@ const ARC={
 };
 function renderArcPick(){
   const el=document.getElementById('arc-pick-list');el.innerHTML='';
-  el.appendChild(mkListItem('🌟','Все буквы — Хардкор!','А Б В Г Д... Я',()=>{initAudio();ARC.start(LETTERS.filter(l=>l.type!=='sign'));go('arcade')}));
-  LESSONS.forEach(ls=>el.appendChild(mkListItem(ls.icon,ls.name+': '+ls.desc,ls.letters.join(' '),()=>{initAudio();ARC.start(ls.letters.map(id=>LETTERS.find(l=>l.id===id)).filter(Boolean));go('arcade')})));
+  el.appendChild(mkListItem('🌟','Все буквы — Хардкор!','А Б В Г Д... Я',()=>{initAudio();go('arcade');ARC.start(LETTERS.filter(l=>l.type!=='sign'))}));
+  LESSONS.forEach(ls=>el.appendChild(mkListItem(ls.icon,ls.name+': '+ls.desc,ls.letters.join(' '),()=>{initAudio();go('arcade');ARC.start(ls.letters.map(id=>LETTERS.find(l=>l.id===id)).filter(Boolean))})));
 }
 
 // SYLLABLES
