@@ -390,6 +390,18 @@ async function _playViaCors(text,rate){
 
 function say(text,rate=.8){
   const w=text.toLowerCase().trim();if(!w)return;
+  // Одиночная буква — играем предзаписанный локальный MP3 (работает везде)
+  if(w.length===1&&/[а-яё]/.test(w)){
+    const au=getAu();
+    au.pause();au.onended=null;
+    au.playbackRate=Math.max(0.5,Math.min(2,rate));
+    au.src='audio/'+w+'.mp3';
+    au.play().catch(()=>_sayFallback(w,rate));
+    return;
+  }
+  _sayFallback(w,rate);
+}
+function _sayFallback(w,rate){
   // Уровень 1: Web Speech API с русским голосом
   if(window.speechSynthesis){
     const voices=window.speechSynthesis.getVoices();
@@ -401,23 +413,19 @@ function say(text,rate=.8){
       window.speechSynthesis.speak(u);return;
     }
   }
-  // Уровень 2: Google TTS через Audio-элемент (синхронный — в контексте жеста)
+  // Уровень 2: Google TTS через Audio-элемент
   const au=getAu();
   au.pause();au.onended=null;
   au.playbackRate=Math.max(0.5,Math.min(2,rate));
   au.src=_gttsUrl(w);
-  au.play().catch(()=>{
-    // Уровень 3: CORS-прокси + Web Audio API
-    _playViaCors(w,rate).then(ok=>{
-      if(!ok&&window.speechSynthesis){
-        // Последний резерв: Web Speech без конкретного голоса
-        window.speechSynthesis.cancel();
-        const u=new SpeechSynthesisUtterance(w);
-        u.lang='ru-RU';u.rate=rate;
-        window.speechSynthesis.speak(u);
-      }
-    });
-  });
+  au.play().catch(()=>_playViaCors(w,rate).then(ok=>{
+    if(!ok&&window.speechSynthesis){
+      window.speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(w);
+      u.lang='ru-RU';u.rate=rate;
+      window.speechSynthesis.speak(u);
+    }
+  }));
 }
 
 function speakSyl(){
