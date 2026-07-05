@@ -39,7 +39,7 @@ body.shaking{animation:screenShake .35s ease}
 .game-card{border-radius:22px;padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:transform .15s var(--spring)}
 .game-card:active{transform:scale(.92)}
 .game-card .gic{font-size:40px}.game-card .gtitle{font-size:14px;font-weight:800;text-align:center}.game-card .gsub{font-size:11px;opacity:.75;text-align:center}
-.gc1{background:linear-gradient(135deg,#ff6b6b,#ee0979)}.gc2{background:linear-gradient(135deg,#4d96ff,#2667ff)}.gc3{background:linear-gradient(135deg,#4dff91,#00b09b)}.gc4{background:linear-gradient(135deg,#ffd700,#f7971e)}.gc5{background:linear-gradient(135deg,#c04dff,#7b2ff7)}.gc6{background:linear-gradient(135deg,#ff9f43,#ee5a24)}
+.gc1{background:linear-gradient(135deg,#ff6b6b,#ee0979)}.gc2{background:linear-gradient(135deg,#4d96ff,#2667ff)}.gc3{background:linear-gradient(135deg,#4dff91,#00b09b)}.gc4{background:linear-gradient(135deg,#ffd700,#f7971e)}.gc5{background:linear-gradient(135deg,#c04dff,#7b2ff7)}.gc6{background:linear-gradient(135deg,#ff9f43,#ee5a24)}.gc7{background:linear-gradient(135deg,#00b09b,#96c93d)}
 .nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0}
 .back{background:rgba(255,255,255,.1);border:none;border-radius:50%;width:42px;height:42px;font-size:20px;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
 .back:active{transform:scale(.88)}
@@ -132,6 +132,10 @@ body.shaking{animation:screenShake .35s ease}
 .meme-em{font-size:62px;display:block;margin-bottom:7px}.meme-tx{font-size:28px;font-weight:900;margin-bottom:5px}.meme-sub{font-size:13px;color:var(--sub)}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);background:#2a1f4f;border-radius:18px;padding:11px 20px;font-size:13px;font-weight:600;transition:transform .3s var(--spring);z-index:600;max-width:88vw;text-align:center;border:1px solid rgba(255,255,255,.15)}
 .toast.on{transform:translateX(-50%) translateY(0)}
+.rd-word-box{font-size:44px;font-weight:900;letter-spacing:5px;text-align:center;padding:22px 12px;background:rgba(255,255,255,.09);border-radius:22px;margin-bottom:10px;min-height:90px;display:flex;align-items:center;justify-content:center;animation:pop .35s var(--spring);flex-shrink:0;border:2px solid rgba(255,255,255,.12)}
+.rd-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex-shrink:0}
+.rd-opt{border-radius:22px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:54px;cursor:pointer;border:3px solid rgba(255,255,255,.1);background:rgba(255,255,255,.07);transition:transform .15s var(--spring);animation:floatUp .45s var(--spring) both;user-select:none}
+.rd-opt:active{transform:scale(.85)}.rd-opt.rd-ok{border-color:var(--mint)!important;background:rgba(77,255,145,.2)!important}.rd-opt.rd-bad{border-color:var(--coral)!important;background:rgba(255,107,107,.15)!important;animation:shake .3s}
 </style>
 </head>
 <body>
@@ -156,6 +160,7 @@ body.shaking{animation:screenShake .35s ease}
     <div class="game-card gc4" onclick="go('arcade-pick')"><span class="gic">🕹️</span><div class="gtitle">Аркада</div><div class="gsub">Лови падающие буквы</div></div>
     <div class="game-card gc5" onclick="go('syllables')"><span class="gic">✍️</span><div class="gtitle">Слоги</div><div class="gsub">МА МО МУ МИ...</div></div>
     <div class="game-card gc6" onclick="go('words')"><span class="gic">📖</span><div class="gtitle">Слова</div><div class="gsub">55 слов по слогам</div></div>
+    <div class="game-card gc7" onclick="go('read-pick')" style="grid-column:1/-1"><span class="gic">👁️</span><div class="gtitle">Читаем! — Слово → Картинка</div><div class="gsub">200 слов — прочитай и найди картинку</div></div>
   </div>
 </div>
 
@@ -246,6 +251,20 @@ body.shaking{animation:screenShake .35s ease}
   <div class="word-card" id="word-card"><span class="word-emoji" id="w-em">🐱</span><div class="word-text" id="w-wd">КОТ</div></div>
   <button class="word-speakbtn" onclick="spWord()">🔊 Прослушать</button>
   <div class="word-nav"><button class="word-navbtn" onclick="prevW()">⬅️</button><button class="word-navbtn" onclick="nextW()">➡️</button></div>
+</div>
+
+<div id="sc-read-pick" class="sc">
+  <div class="nav"><button class="back" onclick="go('home')">←</button><div class="nav-title">👁️ Читаем!</div><div class="nav-coins">💰<span class="cv">0</span></div></div>
+  <div style="display:flex;flex-direction:column;gap:9px;overflow-y:auto" id="read-pick-list"></div>
+</div>
+
+<div id="sc-read" class="sc">
+  <div class="nav"><button class="back" onclick="go('read-pick')">←</button><div class="nav-title" id="rd-nav">👁️ 1/15</div><div class="nav-coins">💰<span class="cv">0</span></div></div>
+  <div class="bprog" id="rd-prog"></div>
+  <div class="rd-word-box" id="rd-word">СЛОН</div>
+  <div style="font-size:12px;color:var(--sub);text-align:center;margin-bottom:12px;flex-shrink:0">📖 Прочитай слово и найди картинку</div>
+  <div class="rd-opts" id="rd-opts"></div>
+  <button onclick="rdHint()" style="margin-top:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:11px;color:rgba(255,255,255,.45);font-size:13px;cursor:pointer;flex-shrink:0;width:100%">🔊 Помощь — послушать слово</button>
 </div>
 
 <div id="sc-alphabet" class="sc">
@@ -469,6 +488,73 @@ const WB_SETS=[
   {name:'🌿 Природа',words:['ДУБ','ЛУНА','РОЗА','СНЕГ','МОРЕ','ВОДА','ГРИБ','ТУЧА','ДОЖДЬ','ОБЛАКО','ЗВЕЗДА','БЕРЁЗА','РАДУГА','ЦВЕТОК'],icon:'🌿'},
 ];
 
+// READ GAME — 200 слов. c: a=животные f=еда n=природа t=транспорт o=предметы p=люди s=космос sp=спорт cl=одежда
+const READ_WORDS=[
+  // Животные (50)
+  {w:'КОТ',e:'🐱',c:'a'},{w:'ПЁС',e:'🐕',c:'a'},{w:'ЛЕВ',e:'🦁',c:'a'},{w:'ТИГР',e:'🐯',c:'a'},{w:'ВОЛК',e:'🐺',c:'a'},
+  {w:'ЛИСА',e:'🦊',c:'a'},{w:'ЗАЯЦ',e:'🐇',c:'a'},{w:'МЕДВЕДЬ',e:'🐻',c:'a'},{w:'СЛОН',e:'🐘',c:'a'},{w:'ЖИРАФ',e:'🦒',c:'a'},
+  {w:'ЗЕБРА',e:'🦓',c:'a'},{w:'ОБЕЗЬЯНА',e:'🐒',c:'a'},{w:'ПИНГВИН',e:'🐧',c:'a'},{w:'УТКА',e:'🦆',c:'a'},{w:'ГУСЬ',e:'🪿',c:'a'},
+  {w:'КУРИЦА',e:'🐔',c:'a'},{w:'КОРОВА',e:'🐄',c:'a'},{w:'ЛОШАДЬ',e:'🐴',c:'a'},{w:'КОЗА',e:'🐐',c:'a'},{w:'КРОЛИК',e:'🐰',c:'a'},
+  {w:'МЫШКА',e:'🐭',c:'a'},{w:'ХОМЯК',e:'🐹',c:'a'},{w:'ЁЖ',e:'🦔',c:'a'},{w:'БЕЛКА',e:'🐿️',c:'a'},{w:'ЛОСЬ',e:'🦌',c:'a'},
+  {w:'КРАБ',e:'🦀',c:'a'},{w:'КИТ',e:'🐋',c:'a'},{w:'ДЕЛЬФИН',e:'🐬',c:'a'},{w:'РЫБА',e:'🐟',c:'a'},{w:'АКУЛА',e:'🦈',c:'a'},
+  {w:'ЧЕРЕПАХА',e:'🐢',c:'a'},{w:'ЛЯГУШКА',e:'🐸',c:'a'},{w:'ЗМЕЯ',e:'🐍',c:'a'},{w:'КРОКОДИЛ',e:'🐊',c:'a'},{w:'ПОПУГАЙ',e:'🦜',c:'a'},
+  {w:'ОРЁЛ',e:'🦅',c:'a'},{w:'БАБОЧКА',e:'🦋',c:'a'},{w:'ПЧЕЛА',e:'🐝',c:'a'},{w:'НОСОРОГ',e:'🦏',c:'a'},{w:'БЕГЕМОТ',e:'🦛',c:'a'},
+  {w:'КЕНГУРУ',e:'🦘',c:'a'},{w:'ПАНДА',e:'🐼',c:'a'},{w:'ФЛАМИНГО',e:'🦩',c:'a'},{w:'ОСЬМИНОГ',e:'🐙',c:'a'},{w:'УЛИТКА',e:'🐌',c:'a'},
+  {w:'ЛЕБЕДЬ',e:'🦢',c:'a'},{w:'СОВА',e:'🦉',c:'a'},{w:'БОБЁР',e:'🦫',c:'a'},{w:'ВЫДРА',e:'🦦',c:'a'},{w:'СКОРПИОН',e:'🦂',c:'a'},
+  // Еда (35)
+  {w:'ЯБЛОКО',e:'🍏',c:'f'},{w:'БАНАН',e:'🍌',c:'f'},{w:'АПЕЛЬСИН',e:'🍊',c:'f'},{w:'ЛИМОН',e:'🍋',c:'f'},{w:'КЛУБНИКА',e:'🍓',c:'f'},
+  {w:'АРБУЗ',e:'🍉',c:'f'},{w:'ВИНОГРАД',e:'🍇',c:'f'},{w:'ГРУША',e:'🍐',c:'f'},{w:'АНАНАС',e:'🍍',c:'f'},{w:'ВИШНЯ',e:'🍒',c:'f'},
+  {w:'ПЕРСИК',e:'🍑',c:'f'},{w:'ДЫНЯ',e:'🍈',c:'f'},{w:'ТОРТ',e:'🍰',c:'f'},{w:'ПИЦЦА',e:'🍕',c:'f'},{w:'ХЛЕБ',e:'🍞',c:'f'},
+  {w:'МЁД',e:'🍯',c:'f'},{w:'СЫР',e:'🧀',c:'f'},{w:'ЯЙЦО',e:'🥚',c:'f'},{w:'МОЛОКО',e:'🥛',c:'f'},{w:'КОНФЕТА',e:'🍬',c:'f'},
+  {w:'МОРОЖЕНОЕ',e:'🍦',c:'f'},{w:'МОРКОВЬ',e:'🥕',c:'f'},{w:'ОГУРЕЦ',e:'🥒',c:'f'},{w:'ПОМИДОР',e:'🍅',c:'f'},{w:'КАРТОШКА',e:'🥔',c:'f'},
+  {w:'КУКУРУЗА',e:'🌽',c:'f'},{w:'МАСЛО',e:'🧈',c:'f'},{w:'КАША',e:'🥣',c:'f'},{w:'СУП',e:'🍲',c:'f'},{w:'ПИРОГ',e:'🥧',c:'f'},
+  {w:'БЛИН',e:'🥞',c:'f'},{w:'СУШИ',e:'🍣',c:'f'},{w:'ШОКОЛАД',e:'🍫',c:'f'},{w:'ПЕЧЕНЬЕ',e:'🍪',c:'f'},{w:'ПОНЧИК',e:'🍩',c:'f'},
+  // Природа (20)
+  {w:'СОЛНЦЕ',e:'🌞',c:'n'},{w:'ЛУНА',e:'🌙',c:'n'},{w:'ЗВЕЗДА',e:'⭐',c:'n'},{w:'РАДУГА',e:'🌈',c:'n'},{w:'ОБЛАКО',e:'☁️',c:'n'},
+  {w:'ДОЖДЬ',e:'🌧️',c:'n'},{w:'СНЕГ',e:'❄️',c:'n'},{w:'МОЛНИЯ',e:'⚡',c:'n'},{w:'ОГОНЬ',e:'🔥',c:'n'},{w:'МОРЕ',e:'🌊',c:'n'},
+  {w:'ГОРА',e:'⛰️',c:'n'},{w:'ЛЕС',e:'🌲',c:'n'},{w:'ЦВЕТОК',e:'🌸',c:'n'},{w:'РОЗА',e:'🌹',c:'n'},{w:'ГРИБ',e:'🍄',c:'n'},
+  {w:'ТРАВА',e:'🌱',c:'n'},{w:'ЗЕМЛЯ',e:'🌍',c:'n'},{w:'КАМЕНЬ',e:'🪨',c:'n'},{w:'ДУБ',e:'🌳',c:'n'},{w:'ЛИСТЬЯ',e:'🍂',c:'n'},
+  // Транспорт (15)
+  {w:'МАШИНА',e:'🚗',c:'t'},{w:'ПОЕЗД',e:'🚂',c:'t'},{w:'САМОЛЁТ',e:'✈️',c:'t'},{w:'КОРАБЛЬ',e:'⛵',c:'t'},{w:'РАКЕТА',e:'🚀',c:'t'},
+  {w:'АВТОБУС',e:'🚌',c:'t'},{w:'ВЕЛОСИПЕД',e:'🚲',c:'t'},{w:'МОТОЦИКЛ',e:'🏍️',c:'t'},{w:'ТРАКТОР',e:'🚜',c:'t'},{w:'ВЕРТОЛЁТ',e:'🚁',c:'t'},
+  {w:'ТАКСИ',e:'🚕',c:'t'},{w:'ЛОДКА',e:'🚤',c:'t'},{w:'МЕТРО',e:'🚇',c:'t'},{w:'СКУТЕР',e:'🛵',c:'t'},{w:'ГРУЗОВИК',e:'🚛',c:'t'},
+  // Предметы (20)
+  {w:'ДОМ',e:'🏠',c:'o'},{w:'ЗАМОК',e:'🏰',c:'o'},{w:'ШКОЛА',e:'🏫',c:'o'},{w:'КНИГА',e:'📚',c:'o'},{w:'КАРАНДАШ',e:'✏️',c:'o'},
+  {w:'МЯЧ',e:'⚽',c:'o'},{w:'ШАР',e:'🎈',c:'o'},{w:'КУКЛА',e:'🪆',c:'o'},{w:'РОБОТ',e:'🤖',c:'o'},{w:'ТЕЛЕФОН',e:'📱',c:'o'},
+  {w:'ТЕЛЕВИЗОР',e:'📺',c:'o'},{w:'КЛЮЧ',e:'🔑',c:'o'},{w:'ЗОНТИК',e:'☂️',c:'o'},{w:'ЧАСЫ',e:'⏰',c:'o'},{w:'ЛАМПА',e:'💡',c:'o'},
+  {w:'ГИТАРА',e:'🎸',c:'o'},{w:'БАРАБАН',e:'🥁',c:'o'},{w:'КИНО',e:'🎬',c:'o'},{w:'КУБИК',e:'🎲',c:'o'},{w:'ФЛАГ',e:'🚩',c:'o'},
+  // Люди и тело (15)
+  {w:'НОС',e:'👃',c:'p'},{w:'УХО',e:'👂',c:'p'},{w:'ГЛАЗ',e:'👁️',c:'p'},{w:'РОТ',e:'👄',c:'p'},{w:'РУКА',e:'✋',c:'p'},
+  {w:'СЕРДЦЕ',e:'❤️',c:'p'},{w:'МАМА',e:'👩',c:'p'},{w:'ПАПА',e:'👨',c:'p'},{w:'БАБУШКА',e:'👵',c:'p'},{w:'ДЕДУШКА',e:'👴',c:'p'},
+  {w:'РЕБЁНОК',e:'👶',c:'p'},{w:'ДЕВОЧКА',e:'👧',c:'p'},{w:'МАЛЬЧИК',e:'👦',c:'p'},{w:'ВРАЧ',e:'🧑‍⚕️',c:'p'},{w:'ПОВАР',e:'🧑‍🍳',c:'p'},
+  // Космос и фантастика (10)
+  {w:'ПЛАНЕТА',e:'🪐',c:'s'},{w:'НЛО',e:'🛸',c:'s'},{w:'ДРАКОН',e:'🐲',c:'s'},{w:'ЕДИНОРОГ',e:'🦄',c:'s'},{w:'ВОЛШЕБНИК',e:'🧙',c:'s'},
+  {w:'ПРИНЦЕССА',e:'👸',c:'s'},{w:'РЫЦАРЬ',e:'🤺',c:'s'},{w:'ПИРАТ',e:'🏴‍☠️',c:'s'},{w:'СУПЕРГЕРОЙ',e:'🦸',c:'s'},{w:'ПРИВИДЕНИЕ',e:'👻',c:'s'},
+  // Спорт (10)
+  {w:'БАСКЕТБОЛ',e:'🏀',c:'sp'},{w:'ТЕННИС',e:'🎾',c:'sp'},{w:'ПЛАВАНИЕ',e:'🏊',c:'sp'},{w:'ХОККЕЙ',e:'🏒',c:'sp'},{w:'ЛЫЖИ',e:'⛷️',c:'sp'},
+  {w:'КОНЬКИ',e:'⛸️',c:'sp'},{w:'БОКС',e:'🥊',c:'sp'},{w:'ГИМНАСТИКА',e:'🤸',c:'sp'},{w:'ВЕЛОГОНКА',e:'🚴',c:'sp'},{w:'БЕГ',e:'🏃',c:'sp'},
+  // Одежда (10)
+  {w:'ШАПКА',e:'🧢',c:'cl'},{w:'КУРТКА',e:'🧥',c:'cl'},{w:'ПЛАТЬЕ',e:'👗',c:'cl'},{w:'РУБАШКА',e:'👕',c:'cl'},{w:'ШТАНЫ',e:'👖',c:'cl'},
+  {w:'НОСКИ',e:'🧦',c:'cl'},{w:'БОТИНКИ',e:'👟',c:'cl'},{w:'ПЕРЧАТКИ',e:'🧤',c:'cl'},{w:'ШАРФ',e:'🧣',c:'cl'},{w:'ОЧКИ',e:'👓',c:'cl'},
+  // Разное (15)
+  {w:'ЦИРК',e:'🎪',c:'m'},{w:'ПРАЗДНИК',e:'🎉',c:'m'},{w:'ПОДАРОК',e:'🎁',c:'m'},{w:'МУЗЫКА',e:'🎵',c:'m'},{w:'ТАНЕЦ',e:'💃',c:'m'},
+  {w:'ТЕАТР',e:'🎭',c:'m'},{w:'ФОТО',e:'📷',c:'m'},{w:'ПИСЬМО',e:'✉️',c:'m'},{w:'ДЕНЬГИ',e:'💰',c:'m'},{w:'ПАЗЛ',e:'🧩',c:'m'},
+  {w:'КОМПЬЮТЕР',e:'💻',c:'m'},{w:'РАДИО',e:'📻',c:'m'},{w:'КАРТИНА',e:'🖼️',c:'m'},{w:'КОРОНА',e:'👑',c:'m'},{w:'ЗВОНОК',e:'🔔',c:'m'},
+];
+const READ_CATS=[
+  {name:'🌟 Все слова',    cat:null,  icon:'🌟', desc:'200 слов — все темы'},
+  {name:'🦁 Животные',    cat:'a',   icon:'🦁', desc:'50 животных'},
+  {name:'🍕 Еда',         cat:'f',   icon:'🍕', desc:'35 вкусных слов'},
+  {name:'🌿 Природа',     cat:'n',   icon:'🌿', desc:'20 слов о природе'},
+  {name:'🚗 Транспорт',   cat:'t',   icon:'🚗', desc:'15 видов транспорта'},
+  {name:'🏠 Предметы',    cat:'o',   icon:'🏠', desc:'20 предметов'},
+  {name:'👧 Люди',        cat:'p',   icon:'👧', desc:'15 слов о людях и теле'},
+  {name:'🚀 Фантастика',  cat:'s',   icon:'🚀', desc:'10 слов о космосе и магии'},
+  {name:'⚽ Спорт',       cat:'sp',  icon:'⚽', desc:'10 спортивных слов'},
+  {name:'👕 Одежда',      cat:'cl',  icon:'👕', desc:'10 предметов одежды'},
+  {name:'🎪 Разное',      cat:'m',   icon:'🎪', desc:'15 разных слов'},
+];
+
 const VOWELS=['А','О','У','И','Э','Ы','Е','Ё','Ю','Я'];
 const CONS=['М','Н','Р','Л','П','Б','Т','Д','К','Г','С','З','В','Ф','Х','Ж','Ц','Ч','Ш','Щ'];
 const BC=['b0','b1','b2','b3','b4'];
@@ -494,7 +580,7 @@ function go(name){
   document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
   document.getElementById('sc-'+name).classList.add('on');
   refreshCoins();
-  ({home:renderHome,alphabet:renderAlpha,'bubble-pick':renderBubblePick,'arcade-pick':renderArcPick,syllables:renderSyl,words:renderWords,swipe:startSwipe,'wb-pick':renderWbPick}[name]||(() => {}))();
+  ({home:renderHome,alphabet:renderAlpha,'bubble-pick':renderBubblePick,'arcade-pick':renderArcPick,syllables:renderSyl,words:renderWords,swipe:startSwipe,'wb-pick':renderWbPick,'read-pick':renderReadPick}[name]||(() => {}))();
 }
 
 function renderHome(){
@@ -834,6 +920,68 @@ function particles(x,y){
 }
 function shakeScreen(){document.body.classList.add('shaking');setTimeout(()=>document.body.classList.remove('shaking'),350)}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3000)}
+
+// READ GAME — Читаем!
+let rdList=[],rdIdx=0,rdSc=0,rdDone=false;
+
+function renderReadPick(){
+  const el=document.getElementById('read-pick-list');el.innerHTML='';
+  READ_CATS.forEach(cat=>{
+    const pool=cat.cat?READ_WORDS.filter(x=>x.c===cat.cat):READ_WORDS;
+    el.appendChild(mkListItem(cat.icon,cat.name,cat.desc+' ('+pool.length+' слов)',()=>startRead(pool)));
+  });
+}
+
+function startRead(pool){
+  rdList=pool.sort(R).slice(0,15);rdIdx=0;rdSc=0;
+  go('read');renderRQ();
+}
+
+function renderRQ(){
+  if(rdIdx>=rdList.length){finishRead();return}
+  rdDone=false;
+  const q=rdList[rdIdx];
+  document.getElementById('rd-nav').textContent='👁️ '+(rdIdx+1)+'/'+rdList.length;
+  document.getElementById('rd-prog').innerHTML=rdList.map((_,i)=>{
+    let c='bdot';if(i<rdIdx)c+=' done';if(i===rdIdx)c+=' cur';return'<div class="'+c+'"></div>';
+  }).join('');
+  document.getElementById('rd-word').textContent=q.w;
+  // 2 уникальных дистрактора — другие emoji
+  const wrong=READ_WORDS.filter(x=>x.e!==q.e).sort(R);
+  const opts=[q,wrong[0],wrong[1]].sort(R);
+  const cont=document.getElementById('rd-opts');cont.innerHTML='';
+  opts.forEach((opt,i)=>{
+    const b=document.createElement('div');
+    b.className='rd-opt';b.style.animationDelay=i*.1+'s';b.textContent=opt.e;
+    const isCorrect=opt.e===q.e;
+    b.onclick=()=>answerRd(isCorrect,b);
+    cont.appendChild(b);
+  });
+}
+
+function answerRd(correct,el){
+  if(rdDone)return;rdDone=true;initAudio();
+  if(correct){
+    el.classList.add('rd-ok');sndOk();
+    rdSc+=10;coins+=10;save();refreshCoins();
+    const r=el.getBoundingClientRect();particles(r.left+r.width/2,r.top+r.height/2);
+    showMeme(true);
+    say(rdList[rdIdx].w,.7);
+    setTimeout(()=>{rdIdx++;renderRQ()},1500);
+  }else{
+    el.classList.add('rd-bad');sndWrong();shakeScreen();
+    setTimeout(()=>{el.classList.remove('rd-bad');rdDone=false},900);
+  }
+}
+
+function rdHint(){if(rdList[rdIdx])say(rdList[rdIdx].w,.65)}
+
+function finishRead(){
+  document.getElementById('rd-prog').innerHTML='';
+  document.getElementById('rd-word').innerHTML='';
+  document.getElementById('rd-opts').innerHTML='<div class="finish" style="grid-column:1/-1;padding:20px"><div style="font-size:66px">🏆</div><div style="font-size:24px;font-weight:900">Молодец!</div><div style="color:var(--gold);font-size:18px;margin-top:6px">+'+rdSc+' монет!</div><button onclick="go(\'read-pick\')" style="margin-top:16px;padding:13px 28px;border:none;border-radius:16px;background:linear-gradient(135deg,#4dff91,#00b894);color:#000;font-size:16px;font-weight:700;cursor:pointer">Ещё раунд 🔄</button></div>';
+  sndLvl();
+}
 
 document.addEventListener('touchstart',()=>{initAudio();loadVoice()},{once:true,passive:true});
 document.addEventListener('click',()=>{initAudio();loadVoice()},{once:true});
