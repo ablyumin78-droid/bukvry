@@ -841,12 +841,16 @@ function renderSwCard(){
   const col=l.type==='vowel'?'linear-gradient(135deg,#ff6b6b,#ee0979)':'linear-gradient(135deg,#4d96ff,#2667ff)';
   card.style.background=col;
   void card.offsetWidth;card.style.animation='cardIn .35s var(--spring)';
-  setTimeout(()=>say(swCurCard.sound.id.toLowerCase(),.8),350);
+  // Не автоплей — Android блокирует. Звук играет при касании карточки.
 }
 function replaySwSound(){if(swCurCard)say(swCurCard.sound.id.toLowerCase(),.8)}
 (function initSwipe(){
   const card=document.getElementById('swipe-card');
-  card.addEventListener('touchstart',e=>{swStartX=e.touches[0].clientX;swDragging=true;card.classList.add('dragging')},{passive:true});
+  card.addEventListener('touchstart',e=>{
+    swStartX=e.touches[0].clientX;swDragging=true;card.classList.add('dragging');
+    // Прямой жест пользователя → Android разрешает TTS
+    replaySwSound();
+  },{passive:true});
   card.addEventListener('touchmove',e=>{
     if(!swDragging)return;swCurX=e.touches[0].clientX-swStartX;
     card.style.transform=`translateX(${swCurX}px) rotate(${swCurX*.04}deg)`;
