@@ -370,18 +370,27 @@ function loadVoice(){
   ruVoice=all.find(v=>v.lang==='ru-RU')||all.find(v=>v.lang.startsWith('ru'))||null;
 }
 
-// Воспроизведение через AudioContext — работает на Android в Telegram
+// Предзагрузка — декодируем все буквы один раз при первом касании
+async function _preloadLetters(){
+  if(!actx||!window._LA)return;
+  for(const[l,uri]of Object.entries(window._LA)){
+    if(_decoded[l])continue;
+    try{
+      const bin=atob(uri.split(',')[1]);
+      const arr=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+      _decoded[l]=await actx.decodeAudioData(arr.buffer);
+    }catch(e){}
+  }
+}
+
+// Воспроизведение через AudioContext — мгновенно после предзагрузки
 async function _playAC(letter,rate){
   try{
     if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
     if(actx.state==='suspended')await actx.resume();
-    if(!_decoded[letter]){
-      const b64=window._LA[letter].split(',')[1];
-      const bin=atob(b64);
-      const arr=new Uint8Array(bin.length);
-      for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
-      _decoded[letter]=await actx.decodeAudioData(arr.buffer);
-    }
+    if(!_decoded[letter])await _preloadLetters();
+    if(!_decoded[letter])return;
     const src=actx.createBufferSource();
     src.buffer=_decoded[letter];
     src.playbackRate.value=Math.max(0.5,Math.min(2,rate));
@@ -1178,7 +1187,7 @@ function finishRead(){
   sndLvl();
 }
 
-document.addEventListener('touchstart',()=>{initAudio();loadVoice()},{once:true,passive:true});
+document.addEventListener('touchstart',()=>{initAudio();loadVoice();_preloadLetters();},{once:true,passive:true});
 document.addEventListener('click',()=>{initAudio();loadVoice()},{once:true});
 renderHome();refreshCoins();initStreak();
 if(!learned.size)setTimeout(()=>toast('Нажми 🫧 Пузырьки и начни! 🐱'),800);
